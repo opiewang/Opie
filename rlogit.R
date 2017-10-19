@@ -3,7 +3,9 @@ library("dplyr")
 library("reshape")
 library("caret")
 setwd("~/Raytheon")
+#Read excel file
 raw_data<-read_excel("sheet1.xlsx",sheet=1,col_names = TRUE, na="")
+#changing variable names and type
 raw_data <- raw_data %>%
   rename(c('D/I'="di"))%>%
   rename(c('SalaryLevel'="salary"))%>%
@@ -19,19 +21,25 @@ raw_data$replevel<-factor(raw_data$replevel)
 sapply(raw_data,function(x) sum(is.na(x)))
 data<-raw_data %>%
   subset(select=c(6:30,38,41,44:48,52))
+#Partitioned the dataset in 2 to 1 ratio
 inTrain<-createDataPartition(data$emst,
                              p=0.67,
                              list=FALSE,
                              times = 1)
+#Training set
 train<-data[inTrain,]
+#Test set
 test<-data[-inTrain,]
+#Building logit model based on training data
 model <- glm(emst ~.,family=binomial(link='logit'),data=train)
 summary(model)
+#Predict based on test data
 fitted.results <- predict(model,test,type='response')
 fitted.results <- ifelse(fitted.results > 0.5,1,0)
 prate <-fitted.results != test$emst
 misClasificError<-length(prate[prate==TRUE])/length(prate)
 print(paste('Accuracy',1-misClasificError))
+#Building confusion matrix
 cm<-confusionMatrix(data=fitted.results, reference=test$emst)
 draw_confusion_matrix <- function(cm) {
   
